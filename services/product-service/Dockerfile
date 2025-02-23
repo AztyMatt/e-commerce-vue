@@ -1,6 +1,7 @@
 FROM node:18-alpine
 
-# RUN apk add --no-cache curl
+# Install curl
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
@@ -9,6 +10,8 @@ COPY package.json ./
 RUN npm install
 
 COPY . .
+
+COPY ../../scripts/init-products.sh /app/scripts/init-products.sh
 
 EXPOSE 3000
 

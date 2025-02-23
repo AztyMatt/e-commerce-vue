@@ -24,12 +24,11 @@ services:
     volumes:
       - ./services/product-service:/app
       - /app/node_modules
-      - ./scripts:/app/scripts
     env_file:
-        - .env
+      - .env
     depends_on:
       - mongodb
-    entrypoint: /bin/sh -c "chmod +x /app/scripts/init-products.sh && sh /app/scripts/init-products.sh && npm run dev"
+    entrypoint: /bin/sh -c "sh /app/scripts/init-products.sh && npm run dev"
 
   auth-service:
     build:
@@ -40,7 +39,7 @@ services:
       - ./services/auth-service:/app
       - /app/node_modules
     env_file:
-        - .env
+      - .env
     depends_on:
       - mongodb
 
@@ -53,7 +52,7 @@ services:
       - ./services/order-service:/app
       - /app/node_modules
     env_file:
-        - .env
+      - .env
     depends_on:
       - mongodb
 
