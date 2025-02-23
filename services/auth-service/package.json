@@ -8,6 +8,7 @@
         "test": "NODE_ENV=test NODE_OPTIONS='--experimental-vm-modules' jest --detectOpenHandles --forceExit --coverage --testTimeout=90000"
     },
     "dependencies": {
+        "auth-service": "file:",
         "bcryptjs": "^2.4.3",
         "cors": "^2.8.5",
         "dotenv": "^16.0.0",
@@ -18,7 +19,7 @@
     "devDependencies": {
         "jest": "^29.7.0",
         "mongodb-memory-server-core": "^8.12.2",
-        "supertest": "^6.0.0",
-        "nodemon": "^3.0.0"
+        "nodemon": "^3.0.0",
+        "supertest": "^6.0.0"
     }
 }
