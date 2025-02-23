@@ -2,6 +2,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: ../Dockerfile
+      args:
+        PORT: 8080
     ports:
       - "8080:8080"
     volumes:
@@ -13,6 +16,9 @@ services:
   product-service:
     build:
       context: ./services/product-service
+      dockerfile: ../../Dockerfile
+      args:
+        PORT: 3000
     ports:
       - "3000:3000"
     volumes:
@@ -20,7 +26,7 @@ services:
       - /app/node_modules
       # - ./scripts:/app/scripts
     env_file:
-        - .env
+      - .env
     depends_on:
       - mongodb
     # entrypoint: /bin/sh -c "chmod +x /app/scripts/init-products.sh && sh /app/scripts/init-products.sh && npm run dev"
@@ -28,26 +34,32 @@ services:
   auth-service:
     build:
       context: ./services/auth-service
+      dockerfile: ../../Dockerfile
+      args:
+        PORT: 3001
     ports:
       - "3001:3001"
     volumes:
       - ./services/auth-service:/app
       - /app/node_modules
     env_file:
-        - .env
+      - .env
     depends_on:
       - mongodb
 
   order-service:
     build:
       context: ./services/order-service
+      dockerfile: ../../Dockerfile
+      args:
+        PORT: 3002
     ports:
       - "3002:3002"
     volumes:
       - ./services/order-service:/app
       - /app/node_modules
     env_file:
-        - .env
+      - .env
     depends_on:
       - mongodb
 
