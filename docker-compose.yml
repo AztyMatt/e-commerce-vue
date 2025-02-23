@@ -1,0 +1,59 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+
+  product-service:
+    build:
+      context: ./services/product-service
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/product-service:/app
+      - /app/node_modules
+      # - ./scripts:/app/scripts
+    env_file:
+        - .env
+    depends_on:
+      - mongodb
+    # entrypoint: /bin/sh -c "chmod +x /app/scripts/init-products.sh && sh /app/scripts/init-products.sh && npm run dev"
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+    env_file:
+        - .env
+    depends_on:
+      - mongodb
+
+  order-service:
+    build:
+      context: ./services/order-service
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./services/order-service:/app
+      - /app/node_modules
+    env_file:
+        - .env
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - ./mongo-data:/data/db

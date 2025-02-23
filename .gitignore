@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .vite
 package-lock.json
+/mongo-data
 
 # Editor directories and files
 .vscode/*
