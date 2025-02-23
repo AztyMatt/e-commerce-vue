@@ -2,7 +2,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: ../Dockerfile
+      dockerfile: ../Dockerfile.common #! Needs to be properly defined 
       args:
         PORT: 8080
     ports:
@@ -10,13 +10,13 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    environment:
-      - NODE_ENV=development
+    env_file:
+      - .env
 
   product-service:
     build:
       context: ./services/product-service
-      dockerfile: ../../Dockerfile
+      dockerfile: ../../Dockerfile.common #! Needs to be properly defined 
       args:
         PORT: 3000
     ports:
@@ -24,17 +24,15 @@ services:
     volumes:
       - ./services/product-service:/app
       - /app/node_modules
-      # - ./scripts:/app/scripts
     env_file:
       - .env
     depends_on:
       - mongodb
-    # entrypoint: /bin/sh -c "chmod +x /app/scripts/init-products.sh && sh /app/scripts/init-products.sh && npm run dev"
 
   auth-service:
     build:
       context: ./services/auth-service
-      dockerfile: ../../Dockerfile
+      dockerfile: ../../Dockerfile.common #! Needs to be properly defined 
       args:
         PORT: 3001
     ports:
@@ -50,7 +48,7 @@ services:
   order-service:
     build:
       context: ./services/order-service
-      dockerfile: ../../Dockerfile
+      dockerfile: ../../Dockerfile.common #! Needs to be properly defined 
       args:
         PORT: 3002
     ports:
