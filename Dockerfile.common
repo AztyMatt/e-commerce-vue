@@ -1,0 +1,35 @@
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+COPY package.json ./
+
+RUN if [ "$NODE_ENV" = "prod" ]; then \
+        npm ci --only=production; \
+    else \
+        npm install; \
+    fi
+
+COPY . .
+
+RUN if [ "$NODE_ENV" = "prod" ] && npm run | grep -q "^  build$"; then \
+        npm run build; \
+    else \
+        echo "Build not necessary or development mode"; \
+    fi
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY --from=build /app /app
+#! in prod, only /app/dist needs to be copied (if it exists) !
+
+ARG PORT=3001
+EXPOSE $PORT
+
+CMD if [ "$NODE_ENV" = "prod" ]; then \
+        npm run start; \
+    else \
+        npm run dev; \
+    fi
