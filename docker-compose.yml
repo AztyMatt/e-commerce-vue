@@ -28,6 +28,7 @@ services:
       - .env
     depends_on:
       - mongodb
+    entrypoint: /bin/sh -c "sh /app/scripts/init-products.sh && npm run dev"
 
   auth-service:
     build:
