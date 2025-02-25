@@ -10,6 +10,14 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
     env_file:
       - .env
 
@@ -28,6 +36,7 @@ services:
       - .env
     depends_on:
       - mongodb
+    entrypoint: /bin/sh -c "sh /app/scripts/init-products.sh && npm run dev"
 
   auth-service:
     build:
