@@ -2,9 +2,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: ../Dockerfile.common #! Needs to be properly defined 
-      args:
-        PORT: 8080
+      dockerfile: ../Dockerfile.common
     ports:
       - "8080:8080"
     volumes:
@@ -18,15 +16,11 @@ services:
           memory: 512M
         reservations:
           memory: 256M
-    env_file:
-      - .env
 
   product-service:
     build:
       context: ./services/product-service
-      dockerfile: ../../Dockerfile.common #! Needs to be properly defined 
-      args:
-        PORT: 3000
+      dockerfile: ../../Dockerfile.common
     ports:
       - "3000:3000"
     volumes:
@@ -41,9 +35,7 @@ services:
   auth-service:
     build:
       context: ./services/auth-service
-      dockerfile: ../../Dockerfile.common #! Needs to be properly defined 
-      args:
-        PORT: 3001
+      dockerfile: ../../Dockerfile.common
     ports:
       - "3001:3001"
     volumes:
@@ -57,9 +49,7 @@ services:
   order-service:
     build:
       context: ./services/order-service
-      dockerfile: ../../Dockerfile.common #! Needs to be properly defined 
-      args:
-        PORT: 3002
+      dockerfile: ../../Dockerfile.common
     ports:
       - "3002:3002"
     volumes:
