@@ -579,6 +579,113 @@ Objectif : Mettre en place un monitoring complet pour les trois microservices en
     networks:
       - monitoring
 ```
+Prometheus est désormais accessible sur : http://localhost:9090
+Grafana est désormais accesible sur : http://localhost:3000
+
+- Etape 2 : Configuration de prometheus pour récupérer les métriques dans le fichier prometheus.yaml
+``` javascript
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  - job_name: "auth-service"
+    static_configs:
+      - targets: ["host.docker.internal:3001"]
+
+  - job_name: "product-service"
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+
+  - job_name: "order-service"
+    static_configs:
+      - targets: ["host.docker.internal:3002"]
+
+  - job_name: "mongodb"
+    static_configs:
+      - targets: ["mongodb-exporter:9216"]
+```
+Prometheus récupère désormais les métriques des microservice via : /metrics.
+
+MongoDB est monitoré depuis mongodb-exporter
+ 
+- Etape 3 : Ajout de l'exportation des métriques dans chaque microservice
+  
+   a. Installation de prom-client et express-prom-bundle pour chaque micro service/
+  
+   b. Ajout de la middleware de monitoring dans app.js
+  
+        ``` javascript
+              const metricsMiddleware = promBundle({ includeMethod: true });
+               app.use(metricsMiddleware);
+               
+               const httpRequestCounter = new client.Counter({
+                 name: "http_requests_total",
+                 help: "Total HTTP requests received",
+               });
+               
+               const responseTimeHistogram = new client.Histogram({
+                 name: "http_response_time_seconds",
+                 help: "Response time in seconds",
+                 buckets: [0.1, 0.5, 1, 2, 5, 10],
+               });
+               
+               app.use((req, res, next) => {
+                 httpRequestCounter.inc();
+                 const start = Date.now();
+                 res.on("finish", () => {
+                   const duration = (Date.now() - start) / 1000;
+                   responseTimeHistogram.observe(duration);
+                 });
+                 next();
+               });
+               
+               app.get("/metrics", async (req, res) => {
+                 res.set("Content-Type", client.register.contentType);
+                 res.end(await client.register.metrics());
+               });
+     ```
+Chaque service expose désormais /metrics pour Prometheus.
+
+On surveille les requêtes HTTP et les temps de réponse.
+
+- Etape 4 : Vérification des métriques dans Prometheus
+  
+   a. Vérifier que tous les services ont un statut UP
+     ![image](https://github.com/user-attachments/assets/5789cb5d-159e-47b8-a9eb-84f220575687)
+  
+   b. Tester une requete promQL ( si 1 => le service est bien surveillé et si 0 => le service n'est pas surveillé )
+      ![image](https://github.com/user-attachments/assets/e5f9cddb-edcd-40d9-8f9d-ddf043d80203)
+
+- Etape 5 : Configurer Grafana pour afficher les métriques
+
+     a. Ajout de Prometheus comme source de données:
+      
+      ***1. Aller dans Configuration > Data Sources.
+         2. Cliquer sur Add Data Source.
+         3. Choisir Prometheus.
+         4. Entrer l'URL : http://prometheus:9090.
+         5. Cliquer sur Save & Test.***
+     b. Importer les dashboards pour visualiser les métriques
+  
+           ***Dans Grafana > Dashboards > Import, nous avons ajouté :
+           API Node.js → ID 11074.
+           MongoDB → ID 2583.***
+     c. Analyser les métriques dans Grafana
+       Par exemple: on a testé sur le nombre total de requetes pour chaque micro service.
+
+        Exemple du service auth-service avec la commande rate(http_requests_total{job="auth-service"}[5m]):
+         ![image](https://github.com/user-attachments/assets/b643ee0d-38fd-4aac-ae1f-a93a97b16f24)
+
+
+  
 
 
 
