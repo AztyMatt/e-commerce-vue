@@ -548,6 +548,39 @@ npm run lint || true # Si disponible
   - PM2 est utilisé pour gérer les processus Node.js dans les environnements de pré-production ou de test.
 - **Gestion des Variables d'Environnement** :
   - Les variables sensibles, comme `JWT_SECRET`, sont gérées via des variables d'environnement et doivent être correctement configurées.
+    
+---
+
+## Bonus
+### Monitoring avancé avec Prometheus et Grafana
+Objectif : Mettre en place un monitoring complet pour les trois microservices en nodeJS et la base de données MongoDB, avec Prometheus pour la collecte des métriques et Grafana pour la visualisation.
+
+- Etape 1 : Ajouter les services Protheus et Grafana dans le fichier docker-compose.yml
+``` javascript
+  services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+```
+
+
 
 ---
 
