@@ -12,7 +12,6 @@ services:
     depends_on:
       - cadvisor
 
-  # 📦 cAdvisor - Surveillance des conteneurs Docker
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
     container_name: cadvisor
@@ -24,7 +23,6 @@ services:
       - "/sys:/sys:ro"
       - "/var/lib/docker/:/var/lib/docker:ro"
 
-  # 📊 Grafana - Visualisation des métriques
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -34,8 +32,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=admin # User par défaut
-      - GF_SECURITY_ADMIN_PASSWORD=admin # Mot de passe par défaut
+      - GF_SECURITY_ADMIN_USER=admin 
+      - GF_SECURITY_ADMIN_PASSWORD=admin 
     depends_on:
       - prometheus
 
