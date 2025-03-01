@@ -3,5 +3,11 @@
     "@vitejs/plugin-vue": "^5.1.4",
     "terser": "^5.36.0",
     "vite": "^5.4.10"
+  },
+  "scripts": {
+    "scan": "trivy fs ."
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.5"
   }
 }

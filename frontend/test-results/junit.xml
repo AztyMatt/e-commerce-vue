@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="14" failures="0" errors="0" time="1.834">
+    <testsuite name="tests/App.spec.js" timestamp="2025-02-28T22:50:41.888Z" hostname="X225FRANCX" tests="3" failures="0" errors="0" skipped="0" time="0.067">
+        <testcase classname="tests/App.spec.js" name="App &gt; initialise correctement l&apos;état du panier" time="0.05">
+        </testcase>
+        <testcase classname="tests/App.spec.js" name="App &gt; met à jour correctement le panier lors de l&apos;ajout d&apos;un produit" time="0.01">
+            <system-out>
+Adding to cart: { _id: [33m1[39m, name: [32m&apos;Test&apos;[39m, price: [33m100[39m }
+
+            </system-out>
+        </testcase>
+        <testcase classname="tests/App.spec.js" name="App &gt; supprime correctement un produit du panier" time="0.006">
+            <system-out>
+Adding to cart: { _id: [33m1[39m, name: [32m&apos;Test&apos;[39m, price: [33m100[39m }
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/helloWorld.spec.js" timestamp="2025-02-28T22:50:41.891Z" hostname="X225FRANCX" tests="2" failures="0" errors="0" skipped="0" time="0.003">
+        <testcase classname="tests/helloWorld.spec.js" name="Hello World Component &gt; Affiche" time="0.002">
+        </testcase>
+        <testcase classname="tests/helloWorld.spec.js" name="Axios Service &gt; Return" time="0">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/ProductList.spec.js" timestamp="2025-02-28T22:50:41.893Z" hostname="X225FRANCX" tests="3" failures="0" errors="0" skipped="0" time="0.05">
+        <testcase classname="tests/components/ProductList.spec.js" name="ProductList &gt; affiche correctement la liste des produits" time="0.034">
+        </testcase>
+        <testcase classname="tests/components/ProductList.spec.js" name="ProductList &gt; émet un événement add-to-cart lors du clic sur le bouton ajouter" time="0.008">
+        </testcase>
+        <testcase classname="tests/components/ProductList.spec.js" name="ProductList &gt; affiche correctement les prix des produits" time="0.006">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/productService.spec.js" timestamp="2025-02-28T22:50:41.894Z" hostname="X225FRANCX" tests="3" failures="0" errors="0" skipped="0" time="0.055">
+        <testcase classname="tests/components/productService.spec.js" name="ProductList &gt; affiche correctement la liste des produits" time="0.041">
+        </testcase>
+        <testcase classname="tests/components/productService.spec.js" name="ProductList &gt; émet un événement add-to-cart lors du clic sur le bouton ajouter" time="0.01">
+        </testcase>
+        <testcase classname="tests/components/productService.spec.js" name="ProductList &gt; affiche correctement les prix des produits" time="0.003">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/components/ShoppingCart.spec.js" timestamp="2025-02-28T22:50:41.896Z" hostname="X225FRANCX" tests="3" failures="0" errors="0" skipped="0" time="0.046">
+        <testcase classname="tests/components/ShoppingCart.spec.js" name="ShoppingCart &gt; affiche un panier vide par défaut" time="0.027">
+            <system-out>
+cartItems: []
+
+            </system-out>
+            <system-err>
+[Vue Router warn]: No match found for location with path &quot;/&quot;
+
+            </system-err>
+        </testcase>
+        <testcase classname="tests/components/ShoppingCart.spec.js" name="ShoppingCart &gt; calcule correctement le total du panier" time="0.009">
+            <system-out>
+cartItems: [
+  { productId: { _id: [33m1[39m, name: [32m&apos;Produit 1&apos;[39m, price: [33m100[39m }, quantity: [33m1[39m },
+  { productId: { _id: [33m2[39m, name: [32m&apos;Produit 2&apos;[39m, price: [33m200[39m }, quantity: [33m1[39m }
+]
+
+            </system-out>
+        </testcase>
+        <testcase classname="tests/components/ShoppingCart.spec.js" name="ShoppingCart &gt; émet un événement remove-from-cart lors du clic sur le bouton supprimer" time="0.008">
+            <system-out>
+cartItems: [
+  { productId: { _id: [33m1[39m, name: [32m&apos;Produit 1&apos;[39m, price: [33m100[39m }, quantity: [33m1[39m }
+]
+
+            </system-out>
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -81,7 +81,7 @@ describe('Order Endpoints', () => {
       expect(res.body.status).toBe('pending');
     });
 
-    it('should not create order without products', async () => {
+    it('Ne devrait pas créer de commande sans produits', async () => {
       const orderData = {
         shippingAddress: {
           street: '123 Test St',
@@ -99,9 +99,9 @@ describe('Order Endpoints', () => {
       expect(res.body.message).toMatch(/produits requis/i);
     });
 
-    it('should not create order with invalid product ID', async () => {
+    it('Ne devrait pas créer de commande avec un produit inexistant', async () => {
       // Correction du mock pour rejeter la promesse
-      mockAxiosGet.mockImplementationOnce(() => Promise.reject(new Error('Product not found')));
+      mockAxiosGet.mockImplementationOnce(() => Promise.reject(new Error('Produit non trouvé')));
 
       const orderData = {
         products: [{ 
@@ -146,7 +146,7 @@ describe('Order Endpoints', () => {
       });
     });
 
-    it('should get order by id', async () => {
+    it('Devrait obtenir une commande par id', async () => {
       const res = await request(app)
         .get(`/api/orders/${testOrder._id}`)
         .set('Authorization', `Bearer ${mockToken}`);
@@ -155,7 +155,7 @@ describe('Order Endpoints', () => {
       expect(res.body._id).toBe(testOrder._id.toString());
     });
 
-    it('should not get order of another user', async () => {
+    it('Devrait retourner 403 si l\'utilisateur n\'est pas le propriétaire de la commande', async () => {
       const otherOrder = await Order.create({
         userId: 'other_user_id',
         products: [{
@@ -202,7 +202,7 @@ describe('Order Endpoints', () => {
       });
     });
 
-    it('should update order status', async () => {
+    it('Devrait mettre à jour le statut de la commande', async () => {
       const res = await request(app)
         .patch(`/api/orders/${testOrder._id}/status`)
         .set('Authorization', `Bearer ${mockToken}`)
@@ -212,7 +212,7 @@ describe('Order Endpoints', () => {
       expect(res.body.status).toBe('confirmed');
     });
 
-    it('should not update with invalid status', async () => {
+    it('Ne devrait pas mettre à jour le statut de la commande avec un statut invalide', async () => {
       const res = await request(app)
         .patch(`/api/orders/${testOrder._id}/status`)
         .set('Authorization', `Bearer ${mockToken}`)
@@ -251,7 +251,7 @@ describe('Order Endpoints', () => {
       });
     });
 
-    it('should cancel order', async () => {
+    it('Devrait annuler une commande', async () => {
       const res = await request(app)
         .delete(`/api/orders/${testOrder._id}`)
         .set('Authorization', `Bearer ${mockToken}`);
@@ -264,7 +264,7 @@ describe('Order Endpoints', () => {
     });
 
   
-    it('should not cancel delivered order', async () => {
+    it('Ne devrait pas annuler une commande déjà livrée', async () => {
       await Order.findByIdAndUpdate(testOrder._id, { status: 'delivered' });
   
       const res = await request(app)
