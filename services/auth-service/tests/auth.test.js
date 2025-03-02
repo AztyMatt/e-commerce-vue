@@ -4,7 +4,7 @@ import app from '../src/app.js';
 import User from '../src/models/user.js';
 import jwt from 'jsonwebtoken';
 
-describe('Auth Endpoints', () => {
+describe('Endpoints d\'authentification', () => {
   const testUser = {
     email: 'test@example.com',
     password: 'password123'
@@ -16,7 +16,7 @@ describe('Auth Endpoints', () => {
   });
 
   describe('POST /api/auth/register', () => {
-    it('should create a new user', async () => {
+    it('devrait créer un nouvel utilisateur', async () => {
       const res = await request(app)
         .post('/api/auth/register')
         .send(testUser);
@@ -31,7 +31,7 @@ describe('Auth Endpoints', () => {
       expect(user.email).toBe(testUser.email);
     });
 
-    it('should not create duplicate user', async () => {
+    it('ne devrait pas créer un utilisateur en double', async () => {
       await request(app)
         .post('/api/auth/register')
         .send(testUser);
@@ -44,7 +44,7 @@ describe('Auth Endpoints', () => {
       expect(res.body).toHaveProperty('message', 'Email déjà utilisé');
     });
 
-    it('should not create user with invalid email', async () => {
+    it('ne devrait pas créer un utilisateur avec un email invalide', async () => {
       const res = await request(app)
         .post('/api/auth/register')
         .send({
@@ -63,7 +63,7 @@ describe('Auth Endpoints', () => {
         .send(testUser);
     });
 
-    it('should login with valid credentials', async () => {
+    it('devrait se connecter avec des identifiants valides', async () => {
       const res = await request(app)
         .post('/api/auth/login')
         .send(testUser);
@@ -78,7 +78,7 @@ describe('Auth Endpoints', () => {
       expect(decoded).toHaveProperty('email', testUser.email);
     });
 
-    it('should not login with wrong password', async () => {
+    it('ne devrait pas se connecter avec un mauvais mot de passe', async () => {
       const res = await request(app)
         .post('/api/auth/login')
         .send({
@@ -90,7 +90,7 @@ describe('Auth Endpoints', () => {
       expect(res.body).toHaveProperty('message', 'Email ou mot de passe incorrect');
     });
 
-    it('should not login with non-existent email', async () => {
+    it('ne devrait pas se connecter avec un email inexistant', async () => {
       const res = await request(app)
         .post('/api/auth/login')
         .send({
@@ -116,7 +116,7 @@ describe('Auth Endpoints', () => {
       userId = registerRes.body.userId;
     });
 
-    it('should get user profile with valid token', async () => {
+    it('devrait obtenir le profil utilisateur avec un token valide', async () => {
       const res = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', `Bearer ${token}`);
@@ -127,7 +127,7 @@ describe('Auth Endpoints', () => {
       expect(res.body._id).toBe(userId);
     });
 
-    it('should not get profile without token', async () => {
+    it('ne devrait pas obtenir le profil sans token', async () => {
       const res = await request(app)
         .get('/api/auth/profile');
 
@@ -135,7 +135,7 @@ describe('Auth Endpoints', () => {
       expect(res.body).toHaveProperty('message', 'Token manquant');
     });
 
-    it('should not get profile with invalid token', async () => {
+    it('ne devrait pas obtenir le profil avec un token invalide', async () => {
       const res = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', 'Bearer invalid-token');
@@ -144,7 +144,7 @@ describe('Auth Endpoints', () => {
       expect(res.body).toHaveProperty('message', 'Token invalide');
     });
 
-    it('should not get profile with malformed token', async () => {
+    it('ne devrait pas obtenir le profil avec un token malformé', async () => {
       const res = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', 'InvalidTokenFormat');
