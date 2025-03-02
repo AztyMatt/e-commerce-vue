@@ -12,12 +12,10 @@
    - [Logiciels Nécessaires](#logiciels-nécessaires)
    - [Dépendances](#dépendances)
    - [Détails des Composants](#détails-des-composants)
-   - [Automatisation avec GitLab CI/CD](#automatisation-avec-gitlab-ci-cd)
 5. [Configuration et Déploiement](#configuration-et-déploiement)
    - [Déploiement Manuel avec PM2 pour la Pré-production](#déploiement-manuel-avec-pm2-pour-la-pré-production)
    - [Déploiement avec Docker et Docker Compose](#déploiement-avec-docker-et-docker-compose)
      - [Environnement de Développement](#environnement-de-développement)
-     - [Environnement de Production avec Docker Swarm](#environnement-de-production-avec-docker-swarm)
    - [Scripts d'Automatisation](#scripts-dautomatisation)
 6. [Fonctionnalités Principales](#fonctionnalités-principales)
    - [Authentification JWT](#authentification-jwt)
@@ -59,8 +57,7 @@ Le projet est structuré autour d'une architecture microservices, permettant de 
   - **Product Service** : Gestion des produits et du panier.
   - **Order Service** : Gestion des commandes.
 - **Base de Données** : Chaque microservice dispose de sa propre base de données MongoDB.
-- **Conteneurisation** : Utilisation de Docker et Docker Compose pour la conteneurisation et l'orchestration, avec Docker Swarm pour la production.
-- **Intégration Continue** : Utilisation de GitLab CI/CD avec des runners Docker internes à l'entreprise.
+- **Conteneurisation** : Utilisation de Docker et Docker Compose pour la conteneurisation et l'orchestration.
 
 - Les machines du projets utilisées sont toutes des **debian 12**, veuillez prendre en compte cette information que ce soit ou un déploiement local ou pour votre future pipeline :)
 ### Microservices
@@ -143,13 +140,11 @@ Voici la structure complète du projet, excluant les dossiers ignorés (`node_mo
 
 ### Environnement d'Exécution
 
-L'application peut être déployée de trois manières principales :
+L'application peut être déployée de deux manières principales :
 
 1. **Déploiement Manuel avec PM2 pour la Pré-production** : Exécution directe des services sur votre machine locale en utilisant PM2 pour gérer les processus, idéal pour la pré-production ou les environnements de test.
 
 2. **Déploiement avec Docker et Docker Compose** : Utilisation de Docker pour conteneuriser les services et Docker Compose pour orchestrer les conteneurs en environnement de développement.
-
-3. **Déploiement en Production avec Docker Swarm** : Utilisation de Docker Swarm pour orchestrer les conteneurs en environnement de production, avec le fichier `docker-compose.prod.yml`.
 
 ### Logiciels Nécessaires
 
@@ -165,11 +160,6 @@ L'application peut être déployée de trois manières principales :
 
 - **Docker** : Version 20.x ou supérieure.
 - **Docker Compose** : Version 1.27 ou supérieure.
-- **Docker Swarm** : Inclus avec Docker (activation via `docker swarm init`).
-
-#### Automatisation avec GitLab CI/CD
-
-- **GitLab Runner** : Configuré pour exécuter les pipelines CI/CD avec des runners Docker (Docker-in-Docker - dind) internes à l'entreprise.
 
 #### Outils de Développement (Facultatif)
 
@@ -274,13 +264,6 @@ Chaque microservice backend est développé en Node.js avec Express et possède 
   - **`src/routes/orderRoutes.js`** : Définit les routes pour les commandes.
   - **Tests** : Situés dans **`tests/`**.
 
-### Automatisation avec GitLab CI/CD
-
-Le projet utilise GitLab CI/CD pour automatiser les processus de build, test et déploiement. Chaque microservice et le frontend possèdent leur propre fichier de configuration de pipeline situé à la racine de leur répertoire respectif, nommé `build-*.yml` (par exemple, `build-front.yml` pour le frontend).
-
-- **Runners Docker Internes** : Les pipelines s'exécutent sur des runners Docker-in-Docker (dind) internes à l'entreprise, ce qui permet de construire des images Docker pendant les jobs CI/CD.
-- **Variables CI/CD** : Les variables d'environnement nécessaires (comme `CI_REGISTRY_IMAGE`, `IMAGE_FULL`, `IMAGE_TAG`, `JWT_SECRET`) sont définies dans les variables GitLab CI/CD.
-
 ---
 
 ## Configuration et Déploiement
@@ -364,43 +347,6 @@ Le projet utilise Docker pour conteneuriser les services et le frontend, et Dock
 5. **Accès à l'Application** :
 
    - Ouvrez votre navigateur et accédez à `http://localhost:8080`.
-
-#### Environnement de Production avec Docker Swarm
-
-Pour le déploiement en production, le fichier `docker-compose.prod.yml` est utilisé avec Docker Swarm.
-
-1. **Prérequis** :
-
-   - **Docker** installé sur le serveur de production.
-   - Accès SSH au serveur.
-
-2. **Initialiser Docker Swarm** :
-
-   ```bash
-   docker swarm init
-   ```
-
-3. **Déployer la Stack en Production** :
-
-   ```bash
-   docker stack deploy -c docker-compose.prod.yml e-commerce
-   ```
-
-4. **Vérifier le Déploiement** :
-
-   ```bash
-   docker stack services e-commerce
-   ```
-
-5. **Accès à l'Application** :
-
-   - Accédez à l'adresse IP ou au domaine de votre serveur suivi du port approprié (par exemple, `http://192.168.1.108:8080`).
-
-**Remarques :**
-
-- Le fichier `docker-compose.prod.yml` est configuré pour utiliser les images Docker pré-construites.
-- Les variables comme `IMAGE_TAG` et `CI_REGISTRY_IMAGE` sont gérées par GitLab CI/CD.
-- Adapter le script init-products.sh si nécessaire pour ajouter les produits.
 
 ---
 
@@ -539,15 +485,146 @@ npm run lint || true # Si disponible
   - Le fichier `server.cjs` est configuré pour rediriger correctement les requêtes du frontend vers les services backend.
 - **Conteneurisation et Orchestration** :
   - Utilisation de Docker pour isoler les environnements de développement et de production.
-  - Docker Swarm pour l'orchestration en production, offrant une haute disponibilité et un load balancing.
 - **Tests Automatisés** : Maintien d'une couverture de tests élevée pour assurer la qualité et la fiabilité du code.
-- **CI/CD avec GitLab** :
-  - Intégration de pipelines CI/CD pour automatiser les tests, la construction des images Docker et le déploiement.
-  - Utilisation de runners Docker-in-Docker internes à l'entreprise.
 - **Utilisation de PM2 pour la Pré-production** :
   - PM2 est utilisé pour gérer les processus Node.js dans les environnements de pré-production ou de test.
 - **Gestion des Variables d'Environnement** :
   - Les variables sensibles, comme `JWT_SECRET`, sont gérées via des variables d'environnement et doivent être correctement configurées.
+    
+---
+
+## Bonus
+### Monitoring avancé avec Prometheus et Grafana
+Objectif : Mettre en place un monitoring complet pour les trois microservices en nodeJS et la base de données MongoDB, avec Prometheus pour la collecte des métriques et Grafana pour la visualisation.
+
+1. Ajouter les services Protheus et Grafana dans le fichier docker-compose.yml
+``` javascript
+  services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+```
+Prometheus est désormais accessible sur : http://localhost:9090
+Grafana est désormais accesible sur : http://localhost:3000
+
+2. Configuration de prometheus pour récupérer les métriques dans le fichier prometheus.yaml
+``` javascript
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  - job_name: "auth-service"
+    static_configs:
+      - targets: ["host.docker.internal:3001"]
+
+  - job_name: "product-service"
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+
+  - job_name: "order-service"
+    static_configs:
+      - targets: ["host.docker.internal:3002"]
+
+  - job_name: "mongodb"
+    static_configs:
+      - targets: ["mongodb-exporter:9216"]
+```
+Prometheus récupère désormais les métriques des microservice via : /metrics.
+
+MongoDB est monitoré depuis mongodb-exporter
+ 
+3. Ajout de l'exportation des métriques dans chaque microservice
+  
+   a. Installation de prom-client et express-prom-bundle pour chaque micro service/
+  
+   b. Ajout de la middleware de monitoring dans app.js
+  
+        ``` javascript
+              const metricsMiddleware = promBundle({ includeMethod: true });
+               app.use(metricsMiddleware);
+               
+               const httpRequestCounter = new client.Counter({
+                 name: "http_requests_total",
+                 help: "Total HTTP requests received",
+               });
+               
+               const responseTimeHistogram = new client.Histogram({
+                 name: "http_response_time_seconds",
+                 help: "Response time in seconds",
+                 buckets: [0.1, 0.5, 1, 2, 5, 10],
+               });
+               
+               app.use((req, res, next) => {
+                 httpRequestCounter.inc();
+                 const start = Date.now();
+                 res.on("finish", () => {
+                   const duration = (Date.now() - start) / 1000;
+                   responseTimeHistogram.observe(duration);
+                 });
+                 next();
+               });
+               
+               app.get("/metrics", async (req, res) => {
+                 res.set("Content-Type", client.register.contentType);
+                 res.end(await client.register.metrics());
+               });
+     ```
+Chaque service expose désormais /metrics pour Prometheus.
+
+On surveille les requêtes HTTP et les temps de réponse.
+
+4. Vérification des métriques dans Prometheus
+  
+   a. Vérifier que tous les services ont un statut UP
+     ![image](https://github.com/user-attachments/assets/5789cb5d-159e-47b8-a9eb-84f220575687)
+  
+   b. Tester une requete promQL ( si 1 => le service est bien surveillé et si 0 => le service n'est pas surveillé )
+      ![image](https://github.com/user-attachments/assets/e5f9cddb-edcd-40d9-8f9d-ddf043d80203)
+
+5. Configurer Grafana pour afficher les métriques
+
+     a. Ajout de Prometheus comme source de données:
+      
+      ***1. Aller dans Configuration > Data Sources.
+         2. Cliquer sur Add Data Source.
+         3. Choisir Prometheus.
+         4. Entrer l'URL : http://prometheus:9090.
+         5. Cliquer sur Save & Test.***
+     b. Importer les dashboards pour visualiser les métriques
+  
+           ***Dans Grafana > Dashboards > Import, nous avons ajouté :
+           API Node.js → ID 11074.
+           MongoDB → ID 2583.***
+     c. Analyser les métriques dans Grafana
+       Par exemple: on a testé sur le nombre total de requetes pour chaque micro service.
+
+        Exemple du service auth-service avec la commande rate(http_requests_total{job="auth-service"}[5m]):
+         ![image](https://github.com/user-attachments/assets/b643ee0d-38fd-4aac-ae1f-a93a97b16f24)
 
 ---
 
@@ -584,7 +661,6 @@ Pour faciliter les tests des différentes APIs de votre application, voici une s
 {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NzNiNmIyYzAyNTJmZDViZmU5OTdkYWMiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJpYXQiOjE3MzE5NDczNDYsImV4cCI6MTczMjAzMzc0Nn0.RcwtvVyp6gw15Zs8addBS25FzuqpqZmxp7OqwglFBG4","userId":"673b6b2c0252fd5bfe997dac","email":"user@example.com"}
 ```
 
-
 - **Récupération du Profil Utilisateur**
 
   ```bash
@@ -608,7 +684,6 @@ Pour faciliter les tests des différentes APIs de votre application, voici une s
 [{"_id":"673b6ba048c194f02ade2aac","name":"Smartphone Galaxy S21","price":899,"description":"Dernier smartphone Samsung avec appareil photo 108MP","stock":15,"createdAt":"2024-11-18T16:30:24.472Z","__v":0},{"_id":"673b6ba048c194f02ade2aae","name":"MacBook Pro M1","price":1299,"description":"Ordinateur portable Apple avec puce M1","stock":10,"createdAt":"2024-11-18T16:30:24.489Z","__v":0},{"_id":"673b6ba048c194f02ade2ab0","name":"PS5","price":499,"description":"Console de jeu dernière génération","stock":5,"createdAt":"2024-11-18T16:30:24.498Z","__v":0},{"_id":"673b6ba048c194f02ade2ab2","name":"Écouteurs AirPods Pro","price":249,"description":"Écouteurs sans fil avec réduction de bruit","stock":20,"createdAt":"2024-11-18T16:30:24.506Z","__v":0},{"_id":"673b6ba048c194f02ade2ab4","name":"Nintendo Switch","price":299,"description":"Console de jeu portable","stock":12,"createdAt":"2024-11-18T16:30:24.516Z","__v":0},{"_id":"673b6ba048c194f02ade2ab6","name":"iPad Air","price":599,"description":"Tablette Apple avec écran Retina","stock":8,"createdAt":"2024-11-18T16:30:24.526Z","__v":0},{"_id":"673b6ba048c194f02ade2ab8","name":"Montre connectée","price":199,"description":"Montre intelligente avec suivi d'activité","stock":25,"createdAt":"2024-11-18T16:30:24.535Z","__v":0},{"_id":"673b6ba048c194f02ade2aba","name":"Enceinte Bluetooth","price":79,"description":"Enceinte portable waterproof","stock":30,"createdAt":"2024-11-18T16:30:24.544Z","__v":0}]1
 ```
 
-
 - **Ajout d'un Produit au Panier**
 
 ```bash
@@ -622,15 +697,12 @@ curl -X POST http://localhost:3000/api/cart/add \
   }'  
 ```
 
-
 ```json
 {"userId":"673b6b2c0252fd5bfe997dac","items":[{"productId":{"_id":"673b6ba048c194f02ade2aba","name":"Enceinte Bluetooth","price":79,"description":"Enceinte portable waterproof","stock":30,"createdAt":"2024-11-18T16:30:24.544Z","__v":0},"quantity":1,"_id":"673b6f7f48c194f02ade2ad0"}],"_id":"673b6f7f48c194f02ade2acf","updatedAt":"2024-11-18T16:46:55.284Z","__v":0}
 ```
 
 #### Order Service
-
-- **Passation d'une Commande**
-
+- **Passage d'une Commande**
 
 ```bash
 curl -X POST http://localhost:3002/api/orders \
@@ -645,15 +717,12 @@ curl -X POST http://localhost:3002/api/orders \
       "street": "123 Test St",
       "city": "Test City",
       "postalCode": "12345"
-    }
-  }'
+    }'
 ```
-
 
 ```json
 {"userId":"673b6b2c0252fd5bfe997dac","products":[{"productId":"673b6ba048c194f02ade2aba","name":"Enceinte Bluetooth","price":79,"quantity":1,"_id":"673b70050a40d45c0f920818"}],"totalAmount":79,"status":"pending","shippingAddress":{"street":"123 Test St","city":"Test City","postalCode":"12345"},"_id":"673b70050a40d45c0f920817","createdAt":"2024-11-18T16:49:09.281Z","__v":0}
 ```
-
 
 - **Consultation de l'Historique des Commandes**
 
@@ -731,47 +800,3 @@ curl -X POST http://localhost:3002/api/orders \
 5. **Accès à l'Application** :
 
    - Ouvrez votre navigateur et accédez à `http://localhost:8080`.
-
-### Déploiement en Production avec Docker Swarm
-
-1. **Prérequis** :
-
-   - **Docker** installé sur le serveur de production.
-   - Accès SSH au serveur.
-
-2. **Initialiser Docker Swarm** :
-
-   ```bash
-   docker swarm init
-   ```
-
-3. **Déployer la Stack en Production** :
-
-   ```bash
-   docker stack deploy -c docker-compose.prod.yml e-commerce
-   ```
-
-4. **Vérifier le Déploiement** :
-
-   ```bash
-   docker stack services e-commerce
-   ```
-
-5. **Accès à l'Application** :
-
-   - Accédez à l'adresse IP ou au domaine de votre serveur suivi du port approprié.
-
-### Automatisation avec GitLab CI/CD
-
-1. **Configuration des Pipelines CI/CD** :
-
-   - Les pipelines sont définis dans les fichiers `build-*.yml` situés dans chaque répertoire de service.
-   - Assurez-vous que les variables CI/CD sont correctement configurées dans GitLab.
-
-2. **Déclencher les Pipelines** :
-
-   - Les pipelines sont déclenchés automatiquement lors des commits sur les branches `develop` et `main`.
-
-3. **Surveillance des Pipelines** :
-
-   - Utilisez l'interface GitLab pour surveiller l'exécution des pipelines, vérifier les rapports de sécurité et consulter les résultats des tests.

@@ -58,9 +58,14 @@ export default {
             Authorization: `Bearer ${token}`
           }
         })
-        products.value = response.data
+        if (response && response.data) {
+          products.value = response.data
+        } else {
+          products.value = []
+        }
       } catch (error) {
         console.error('Erreur chargement produits:', error)
+        products.value = []
       }
     }
 
@@ -77,10 +82,17 @@ export default {
             userId: userId
           }
         })
-        cartItems.value = response.data.items
-        cartCount.value = cartItems.value.length
+        if (response && response.data) {
+          cartItems.value = response.data.items
+          cartCount.value = cartItems.value.length
+        } else {
+          cartItems.value = []
+          cartCount.value = 0
+        }
       } catch (error) {
         console.error('Erreur chargement panier:', error)
+        cartItems.value = []
+        cartCount.value = 0
       }
     }
 
@@ -184,6 +196,34 @@ export default {
       addToCart,
       removeFromCart,
       handleCartCleared
+    }
+  },
+  methods: {
+    async loadProducts() {
+      try {
+        const response = await axios.get('/api/products');
+        if (response && response.data) {
+          this.products = response.data;
+        } else {
+          this.products = [];
+        }
+      } catch (error) {
+        console.error('Erreur chargement produits:', error);
+        this.products = [];
+      }
+    },
+    async loadCart() {
+      try {
+        const response = await axios.get('/api/cart');
+        if (response && response.data) {
+          this.cart = response.data;
+        } else {
+          this.cart = [];
+        }
+      } catch (error) {
+        console.error('Erreur chargement panier:', error);
+        this.cart = [];
+      }
     }
   }
 }
