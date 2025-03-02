@@ -2,7 +2,7 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 RUN if [ "$NODE_ENV" = "prod" ]; then \
         npm ci --only=production && npm cache clean --force; \
