@@ -2,12 +2,12 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 
 RUN if [ "$NODE_ENV" = "prod" ]; then \
-        npm ci --only=production; \
+        npm ci --only=production && npm cache clean --force; \
     else \
-        npm install; \
+        npm install && npm cache clean --force; \
     fi
 
 COPY . .
@@ -22,14 +22,12 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY --from=build /app /app
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/package-lock.json /app/package-lock.json
+COPY --from=build /app/node_modules /app/node_modules
 #! in prod, only /app/dist needs to be copied (if it exists) !
 
 ARG PORT=3001
 EXPOSE $PORT
 
-CMD if [ "$NODE_ENV" = "prod" ]; then \
-        npm run start; \
-    else \
-        npm run dev; \
-    fi
+CMD ["sh", "-c", "if [ \"$NODE_ENV\" = \"production\" ]; then npm run start; else npm run dev; fi"]
