@@ -290,7 +290,9 @@ Les résultats du scan seront affichés dans le terminal après l'exécution de 
 
 -- auth-service
 
+```
 trivy image e-commerce-vue-auth-service
+```
 
 e-commerce-vue-auth-service (alpine 3.21.3)
 ===========================================
@@ -311,6 +313,10 @@ Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
 
 -- order-service
+
+```
+trivy image e-commerce-vue-order-service
+```
 
 e-commerce-vue-order-service (alpine 3.21.3)
 ============================================
@@ -333,6 +339,10 @@ Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
 -- product-service
 
+
+```
+trivy image e-commerce-vue-product-service
+```
 
 e-commerce-vue-product-service (alpine 3.21.3)
 ==============================================
@@ -366,6 +376,10 @@ Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
 -- frontend
 
+```
+trivy image e-commerce-vue-frontend
+```
+
 e-commerce-vue-frontend (alpine 3.21.3)
 =======================================
 Total: 0 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
@@ -398,63 +412,7 @@ Total: 15 (UNKNOWN: 0, LOW: 0, MEDIUM: 12, HIGH: 2, CRITICAL: 1)
 │ stdlib  │ CVE-2024-24790 │ CRITICAL │ fixed  │ v1.20.12          │ 1.21.11, 1.22.4              │ golang: net/netip: Unexpected behavior from Is methods for   │
 │         │                │          │        │                   │                              │ IPv4-mapped IPv6 addresses                                   │
 │         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-24790                   │
-│         ├────────────────┼──────────┤        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2023-45288 │ HIGH     │        │                   │ 1.21.9, 1.22.2               │ golang: net/http, x/net/http2: unlimited number of           │
-│         │                │          │        │                   │                              │ CONTINUATION frames causes DoS                               │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2023-45288                   │
-│         ├────────────────┤          │        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-34156 │          │        │                   │ 1.22.7, 1.23.1               │ encoding/gob: golang: Calling Decoder.Decode on a message    │
-│         │                │          │        │                   │                              │ which contains deeply nested structures...                   │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-34156                   │
-│         ├────────────────┼──────────┤        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2023-45289 │ MEDIUM   │        │                   │ 1.21.8, 1.22.1               │ golang: net/http/cookiejar: incorrect forwarding of          │
-│         │                │          │        │                   │                              │ sensitive headers and cookies on HTTP redirect...            │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2023-45289                   │
-│         ├────────────────┤          │        │                   │                              ├──────────────────────────────────────────────────────────────┤
-│         │ CVE-2023-45290 │          │        │                   │                              │ golang: net/http: golang: mime/multipart: golang:            │
-│         │                │          │        │                   │                              │ net/textproto: memory exhaustion in                          │
-│         │                │          │        │                   │                              │ Request.ParseMultipartForm                                   │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2023-45290                   │
-│         ├────────────────┤          │        │                   │                              ├──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-24783 │          │        │                   │                              │ golang: crypto/x509: Verify panics on certificates with an   │
-│         │                │          │        │                   │                              │ unknown public key algorithm...                              │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-24783                   │
-│         ├────────────────┤          │        │                   │                              ├──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-24784 │          │        │                   │                              │ golang: net/mail: comments in display names are incorrectly  │
-│         │                │          │        │                   │                              │ handled                                                      │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-24784                   │
-│         ├────────────────┤          │        │                   │                              ├──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-24785 │          │        │                   │                              │ golang: html/template: errors returned from MarshalJSON      │
-│         │                │          │        │                   │                              │ methods may break template escaping                          │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-24785                   │
-│         ├────────────────┤          │        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-24789 │          │        │                   │ 1.21.11, 1.22.4              │ golang: archive/zip: Incorrect handling of certain ZIP files │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-24789                   │
-│         ├────────────────┤          │        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-24791 │          │        │                   │ 1.21.12, 1.22.5              │ net/http: Denial of service due to improper 100-continue     │
-│         │                │          │        │                   │                              │ handling in net/http                                         │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-24791                   │
-│         ├────────────────┤          │        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-34155 │          │        │                   │ 1.22.7, 1.23.1               │ go/parser: golang: Calling any of the Parse functions        │
-│         │                │          │        │                   │                              │ containing deeply nested literals...                         │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-34155                   │
-│         ├────────────────┤          │        │                   │                              ├──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-34158 │          │        │                   │                              │ go/build/constraint: golang: Calling Parse on a "// +build"  │
-│         │                │          │        │                   │                              │ build tag line with...                                       │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-34158                   │
-│         ├────────────────┤          │        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-45336 │          │        │                   │ 1.22.11, 1.23.5, 1.24.0-rc.2 │ golang: net/http: net/http: sensitive headers incorrectly    │
-│         │                │          │        │                   │                              │ sent after cross-domain redirect                             │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-45336                   │
-│         ├────────────────┤          │        │                   │                              ├──────────────────────────────────────────────────────────────┤
-│         │ CVE-2024-45341 │          │        │                   │                              │ golang: crypto/x509: crypto/x509: usage of IPv6 zone IDs can │
-│         │                │          │        │                   │                              │ bypass URI name...                                           │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-45341                   │
-│         ├────────────────┤          │        │                   ├──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│         │ CVE-2025-22866 │          │        │                   │ 1.22.12, 1.23.6, 1.24.0-rc.3 │ crypto/internal/nistec: golang: Timing sidechannel for P-256 │
-│         │                │          │        │                   │                              │ on ppc64le in crypto/internal/nistec                         │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2025-22866                   │
-└─────────┴────────────────┴──────────┴────────┴───────────────────┴──────────────────────────────┴──────────────────────────────────────────────────────────────┘
+└──────────────────────────┴──────────┴────────┴───────────────────┴──────────────────────────────┴──────────────────────────────────────────────────────────────┘
 
 
 **Fix** : Pour fix ces vulnérabilités il faut mettre a jour les paquets a des versions plus récente.
