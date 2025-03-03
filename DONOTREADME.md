@@ -35,8 +35,11 @@ e-commerce-vue/
 │       ├── scripts/
 │       │   └── init-products.sh
 │       └── ...
+│       └── ...
 └── scripts/
-    └── init-products.sh
+│   └── init-products.sh
+└── Dockerfile.common
+└── docker-compose.yaml
 ```
 
 ## Étapes pour exécuter l'application
@@ -44,7 +47,7 @@ e-commerce-vue/
 ### 1. Cloner le dépôt
 
 ```sh
-git clone <repository-url>
+git clone https://github.com/AztyMatt/e-commerce-vue.git
 cd e-commerce-vue
 ```
 
@@ -101,34 +104,91 @@ Vous devriez voir une liste de produits dans la réponse.
 
 ---
 
-## Dockerfile du service produit
+## Dockerfile 
 
 ```dockerfile
-FROM node:18-alpine
-
-# Installer curl
-RUN apk add --no-cache curl
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install
+
+RUN if [ "$NODE_ENV" = "prod" ]; then \
+        npm ci --only=production && npm cache clean --force; \
+    else \
+        npm install && npm cache clean --force; \
+    fi
+
 COPY . .
 
-# Copier le script d'initialisation
-COPY ../../scripts/init-products.sh /app/scripts/init-products.sh
+RUN if [ "$NODE_ENV" = "prod" ] && npm run | grep -q "^  build$"; then \
+        npm run build; \
+    else \
+        echo "Build not necessary or development mode"; \
+    fi
 
-EXPOSE 3000
-CMD ["npm", "run", "dev"]
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/package-lock.json /app/package-lock.json
+COPY --from=build /app/node_modules /app/node_modules
+#! in prod, only /app/dist needs to be copied (if it exists) !
+
+ARG PORT=3001
+EXPOSE $PORT
+
+CMD ["sh", "-c", "if [ \"$NODE_ENV\" = \"production\" ]; then npm run start; else npm run dev; fi"]
+
 ```
 
 ## Configuration Docker Compose
 
 ```yaml
 services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+    depends_on:
+      - cadvisor
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3100:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin 
+      - GF_SECURITY_ADMIN_PASSWORD=admin 
+    depends_on:
+      - prometheus
+
   frontend:
     build:
       context: ./frontend
+      dockerfile: ../Dockerfile.common
     ports:
       - "8080:8080"
     volumes:
@@ -142,10 +202,17 @@ services:
           memory: 512M
         reservations:
           memory: 256M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   product-service:
     build:
       context: ./services/product-service
+      dockerfile: ../../Dockerfile.common
     ports:
       - "3000:3000"
     volumes:
@@ -156,10 +223,17 @@ services:
     depends_on:
       - mongodb
     entrypoint: /bin/sh -c "sh /app/scripts/init-products.sh && npm run dev"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   auth-service:
     build:
       context: ./services/auth-service
+      dockerfile: ../../Dockerfile.common
     ports:
       - "3001:3001"
     volumes:
@@ -169,10 +243,17 @@ services:
       - .env
     depends_on:
       - mongodb
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   order-service:
     build:
       context: ./services/order-service
+      dockerfile: ../../Dockerfile.common
     ports:
       - "3002:3002"
     volumes:
@@ -182,6 +263,12 @@ services:
       - .env
     depends_on:
       - mongodb
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   mongodb:
     image: mongo:latest
@@ -189,6 +276,27 @@ services:
       - "27018:27017"
     volumes:
       - ./mongo-data:/data/db
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  mongodb-exporter:
+    image: bitnami/mongodb-exporter:latest
+    container_name: mongodb-exporter
+    ports:
+      - "9216:9216"
+    environment:
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+volumes:
+  grafana-data:
+
 ```
 
 ---
@@ -248,7 +356,7 @@ echo "Initialisation des produits terminée !"
 
 ### Création d'un fichier `.trivyignore`
 
-Ajoutez les lignes suivantes dans un fichier `.trivyignore` pour ignorer certains fichiers et dossiers :
+fichier `.trivyignore` :
 
 ```
 *.log
@@ -260,7 +368,7 @@ dist/
 
 ### Installation de Trivy
 
-Pour installer Trivy, utilisez la commande suivante :
+installation de Trivy :
 
 ```sh
 winget install AquaSecurity.Trivy
@@ -268,7 +376,7 @@ winget install AquaSecurity.Trivy
 
 ### Ajout d'un script de scan dans `package.json`
 
-Ajoutez le script suivant dans la section `"scripts"` de votre fichier `package.json` :
+Ajout du script dans `package.json > scripts` :
 
 ```json
 "scripts": {
@@ -278,89 +386,85 @@ Ajoutez le script suivant dans la section `"scripts"` de votre fichier `package.
 
 ### Exécution du scan
 
-Pour exécuter le scan, utilisez la commande suivante :
+Exécution du scan :
 
 ```sh
 npm run scan
 ```
 
+---
+
 ### Résultat obtenu
 
-Les résultats du scan seront affichés dans le terminal après l'exécution de la commande.
 
--- auth-service
+- auth-service
 
 ```
 trivy image e-commerce-vue-auth-service
 ```
 
-e-commerce-vue-auth-service (alpine 3.21.3)
+### e-commerce-vue-auth-service (alpine 3.21.3)
 ===========================================
 Total: 0 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
 
 2025-02-28T23:15:55+01:00       INFO    Table result includes only package filenames. Use '--format json' option to get the full path to the package file.
 
-Node.js (node-pkg)
+### Node.js (node-pkg)
 ==================
 Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
-┌────────────────────────────┬────────────────┬──────────┬────────┬───────────────────┬───────────────┬───────────────────────────────────────────────────┐
-│          Library           │ Vulnerability  │ Severity │ Status │ Installed Version │ Fixed Version │                       Title                       │
-├────────────────────────────┼────────────────┼──────────┼────────┼───────────────────┼───────────────┼───────────────────────────────────────────────────┤
-│ cross-spawn (package.json) │ CVE-2024-21538 │ HIGH     │ fixed  │ 7.0.3             │ 7.0.5, 6.0.6  │ cross-spawn: regular expression denial of service │
-│                            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2024-21538        │
-└────────────────────────────┴────────────────┴──────────┴────────┴───────────────────┴───────────────┴───────────────────────────────────────────────────┘
+| Library             | Vulnerability        | Severity | Status | Installed Version | Fixed Version | Title                                                                 |
+|---------------------|----------------------|----------|--------|-------------------|---------------|-----------------------------------------------------------------------|
+| cross-spawn         | CVE-2024-21538       | HIGH     | fixed  | 7.0.3             | 7.0.5, 6.0.6  | cross-spawn: regular expression denial of service [More Info](https://avd.aquasec.com/nvd/cve-2024-21538)               |
 
+---
 
--- order-service
+- order-service
 
 ```
 trivy image e-commerce-vue-order-service
 ```
 
-e-commerce-vue-order-service (alpine 3.21.3)
+### e-commerce-vue-order-service (alpine 3.21.3)
 ============================================
 Total: 0 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
 
 2025-02-28T23:21:52+01:00       INFO    Table result includes only package filenames. Use '--format json' option to get the full path to the package file.
 
-Node.js (node-pkg)
+### Node.js (node-pkg)
 ==================
 Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
-┌────────────────────────────┬────────────────┬──────────┬────────┬───────────────────┬───────────────┬───────────────────────────────────────────────────┐
-│          Library           │ Vulnerability  │ Severity │ Status │ Installed Version │ Fixed Version │           
-            Title                       │
-├────────────────────────────┼────────────────┼──────────┼────────┼───────────────────┼───────────────┼───────────────────────────────────────────────────┤
-│ cross-spawn (package.json) │ CVE-2024-21538 │ HIGH     │ fixed  │ 7.0.3             │ 7.0.5, 6.0.6  │ cross-spawn: regular expression denial of service │
-│                            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2024-21538        │
-└────────────────────────────┴────────────────┴──────────┴────────┴───────────────────┴───────────────┴───────────────────────────────────────────────────┘
+
+| Library             | Vulnerability        | Severity | Status | Installed Version | Fixed Version | Title                                                                 |
+|---------------------|----------------------|----------|--------|-------------------|---------------|-----------------------------------------------------------------------|
+| cross-spawn         | CVE-2024-21538       | HIGH     | fixed  | 7.0.3             | 7.0.5, 6.0.6  | cross-spawn: regular expression denial of service [More Info](https://avd.aquasec.com/nvd/cve-2024-21538)               |
 
 
--- product-service
+---
+
+- product-service
 
 
 ```
 trivy image e-commerce-vue-product-service
 ```
 
-e-commerce-vue-product-service (alpine 3.21.3)
+### e-commerce-vue-product-service (alpine 3.21.3)
 ==============================================
 Total: 0 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
 
 2025-02-28T23:23:46+01:00       INFO    Table result includes only package filenames. Use '--format json' option to get the full path to the package file.
 
-Node.js (node-pkg)
+### Node.js (node-pkg)
 ==================
 Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
-┌────────────────────────────┬────────────────┬──────────┬────────┬───────────────────┬───────────────┬───────────────────────────────────────────────────┐
-│          Library           │ Vulnerability  │ Severity │ Status │ Installed Version │ Fixed Version │           
-            Title                       │
-├────────────────────────────┼────────────────┼──────────┼────────┼───────────────────┼───────────────┼───────────────────────────────────────────────────┤
-│ cross-spawn (package.json) │ CVE-2024-21538 │ HIGH     │ fixed  │ 7.0.3             │ 7.0.5, 6.0.6  │ cross-spawn: regular expression denial of service │
-│                            │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2024-21538        │
-└────────────────────────────┴────────────────┴──────────┴────────┴───────────────────┴───────────────┴───────────────────────────────────────────────────┘
+
+| Library             | Vulnerability        | Severity | Status | Installed Version | Fixed Version | Title                                                                 |
+|---------------------|----------------------|----------|--------|-------------------|---------------|-----------------------------------------------------------------------|
+| cross-spawn         | CVE-2024-21538       | HIGH     | fixed  | 7.0.3             | 7.0.5, 6.0.6  | cross-spawn: regular expression denial of service [More Info](https://avd.aquasec.com/nvd/cve-2024-21538)               |
+
 
 
 **Résultats des vulnérabilités** :
@@ -373,50 +477,47 @@ Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
 **Fix** : Pour fix cette vulnérabilité il faut mettre a jour le paquet cross-spawn a une version plus récente.
 
+---
 
--- frontend
+- frontend
 
 ```
 trivy image e-commerce-vue-frontend
 ```
 
-e-commerce-vue-frontend (alpine 3.21.3)
+### e-commerce-vue-frontend (alpine 3.21.3)
 =======================================
 Total: 0 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
 
 2025-02-28T23:27:14+01:00       INFO    Table result includes only package filenames. Use '--format json' option to get the full path to the package file.
 
-Node.js (node-pkg)
+### Node.js (node-pkg)
 ==================
 Total: 2 (UNKNOWN: 0, LOW: 0, MEDIUM: 1, HIGH: 1, CRITICAL: 0)
 
-┌────────────────────────────┬─────────────────────┬──────────┬────────┬───────────────────┬───────────────┬─────────────────────────────────────────────────────────┐
-│          Library           │    Vulnerability    │ Severity │ Status │ Installed Version │ Fixed Version │                          Title                          │
-├────────────────────────────┼─────────────────────┼──────────┼────────┼───────────────────┼───────────────┼─────────────────────────────────────────────────────────┤
-│ cross-spawn (package.json) │ CVE-2024-21538      │ HIGH     │ fixed  │ 7.0.3             │ 7.0.5, 6.0.6  │ cross-spawn: regular expression denial of service       │
-│                            │                     │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2024-21538              │
-├────────────────────────────┼─────────────────────┼──────────┤        ├───────────────────┼───────────────┼─────────────────────────────────────────────────────────┤
-│ esbuild (package.json)     │ GHSA-67mh-4wv8-2f99 │ MEDIUM   │        │ 0.21.5            │ 0.25.0        │ esbuild enables any website to send any requests to the │
-│                            │                     │          │        │                   │               │ development server...                                   │
-│                            │                     │          │        │                   │               │ https://github.com/advisories/GHSA-67mh-4wv8-2f99       │
-└────────────────────────────┴─────────────────────┴──────────┴────────┴───────────────────┴───────────────┴─────────────────────────────────────────────────────────┘
 
-app/node_modules/@esbuild/linux-x64/bin/esbuild (gobinary)
+| Library             | Vulnerability        | Severity | Status | Installed Version | Fixed Version | Title                                                                 |
+|---------------------|----------------------|----------|--------|-------------------|---------------|-----------------------------------------------------------------------|
+| cross-spawn         | CVE-2024-21538       | HIGH     | fixed  | 7.0.3             | 7.0.5, 6.0.6  | cross-spawn: regular expression denial of service [More Info](https://avd.aquasec.com/nvd/cve-2024-21538)               |
+| esbuild             | GHSA-67mh-4wv8-2f99  | MEDIUM   |        | 0.21.5            | 0.25.0        | esbuild enables any website to send any requests to the development server... [More Info](https://github.com/advisories/GHSA-67mh-4wv8-2f99) |
+
+
+### app/node_modules/@esbuild/linux-x64/bin/esbuild (gobinary)
 ==========================================================
-Total: 15 (UNKNOWN: 0, LOW: 0, MEDIUM: 12, HIGH: 2, CRITICAL: 1)
+Total: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 1, CRITICAL: 0)
 
-┌─────────┬────────────────┬──────────┬────────┬───────────────────┬──────────────────────────────┬──────────────────────────────────────────────────────────────┐
-│ Library │ Vulnerability  │ Severity │ Status │ Installed Version │        Fixed Version         │               
-             Title                             │
-├─────────┼────────────────┼──────────┼────────┼───────────────────┼──────────────────────────────┼──────────────────────────────────────────────────────────────┤
-│ stdlib  │ CVE-2024-24790 │ CRITICAL │ fixed  │ v1.20.12          │ 1.21.11, 1.22.4              │ golang: net/netip: Unexpected behavior from Is methods for   │
-│         │                │          │        │                   │                              │ IPv4-mapped IPv6 addresses                                   │
-│         │                │          │        │                   │                              │ https://avd.aquasec.com/nvd/cve-2024-24790                   │
-└──────────────────────────┴──────────┴────────┴───────────────────┴──────────────────────────────┴──────────────────────────────────────────────────────────────┘
+
+### Vulnerability Details
+
+| Library | Vulnerability  | Severity | Status | Installed Version | Fixed Version | Title |
+|---------|----------------|----------|--------|-------------------|---------------|-------|
+| stdlib  | CVE-2024-24790 | CRITICAL | fixed  | v1.20.12          | 1.21.11, 1.22.4 | golang: net/netip: Unexpected behavior from Is methods for IPv4-mapped IPv6 addresses [More Info](https://avd.aquasec.com/nvd/cve-2024-24790) |
+
 
 
 **Fix** : Pour fix ces vulnérabilités il faut mettre a jour les paquets a des versions plus récente.
 
+---
 
 ## Test Frontend
 
@@ -489,8 +590,6 @@ Pour exécuter les tests :
 ```sh
 cd frontend
 npm run test
-npm run test:unit
-npm run test:coverage
 ```
 
 ### 4. Commandes de test dans package.json
@@ -498,9 +597,7 @@ npm run test:coverage
 ```json
 {
   "scripts": {
-    "test": "vitest",
-    "test:unit": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test": "vitest"
   }
 }
 ```
@@ -512,17 +609,14 @@ Dans le terminal :
 ```sh
 cd frontend
 npm run test
-npm run test:unit
-npm run test:coverage
-npm run lint:report || true
 ```
 
-## Conclusion des test Frontend
+---
 
-## Résultats des Tests
+# Résultats des Tests
 
 ### Nombre total de fichiers de test
-- 5 fichiers de test ont été exécutés.
+- 4 fichiers de test ont été exécutés.
 
 ### Nombre total de tests
 - 14 tests ont été exécutés.
@@ -547,76 +641,12 @@ npm run lint:report || true
 - **met à jour correctement le panier lors de l'ajout d'un produit** : Le test vérifie que le panier est mis à jour correctement lors de l'ajout d'un produit.
 - **supprime correctement un produit du panier** : Le test vérifie que le produit est supprimé correctement du panier.
 
-### Tests de couverture
-
-#### Couverture globale
-- **% Stmts** : 49.13% des instructions sont couvertes par les tests.
-- **% Branch** : 51.16% des branches conditionnelles sont couvertes.
-- **% Funcs** : 28.57% des fonctions sont couvertes.
-- **% Lines** : 49.13% des lignes de code sont couvertes.
-
-#### Détails par fichier
-
-**App.vue :**
-- 81.29% des instructions
-- 63.15% des branches
-- 50% des fonctions
-- 81.29% des lignes
-
-**ProductList.vue :**
-- 99.08% des instructions
-- 66.66% des branches
-- 100% des fonctions
-- 99.08% des lignes
-
-**ShoppingCart.vue :**
-- 69.85% des instructions
-- 50% des branches
-- 30% des fonctions
-- 69.85% des lignes
-
-**AuthTest.vue :**
-- 62.02% des instructions
-- 100% des branches
-- 0% des fonctions
-- 62.02% des lignes
-
-**OrderHistory.vue :**
-- 0% des instructions
-- 0% des branches
-- 0% des fonctions
-- 0% des lignes
-
-#### Services
-
-**authService.js :**
-- 0% des instructions
-- 0% des branches
-- 0% des fonctions
-- 0% des lignes
-
-**cartService.js :**
-- 26.66% des instructions
-- 100% des branches
-- 0% des fonctions
-- 26.66% des lignes
-
-**orderService.js :**
-- 0% des instructions
-- 0% des branches
-- 0% des fonctions
-- 0% des lignes
-
-**productService.js :**
-- 47.05% des instructions
-- 100% des branches
-- 0% des fonctions
-- 47.05% des lignes
 
 
 ## Test Backend
 
 ### auth-service 
+
 
  PASS  tests/auth.test.js
   Endpoints d'authentification
@@ -633,8 +663,8 @@ npm run lint:report || true
       √ ne devrait pas obtenir le profil sans token (135 ms)
       √ ne devrait pas obtenir le profil avec un token invalide (141 ms)  
       √ ne devrait pas obtenir le profil avec un token malformé (139 ms)  
-                                                                          
--------------|---------|----------|---------|---------|-------------------
+
+
 File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
 -------------|---------|----------|---------|---------|-------------------
 All files    |   66.96 |       64 |    37.5 |   67.56 |                   
@@ -650,7 +680,8 @@ All files    |   66.96 |       64 |    37.5 |   67.56 |
   user.js    |   85.71 |       50 |     100 |     100 | 29                
  src/routes  |   83.33 |      100 |       0 |   83.33 |                   
   ...utes.js |   83.33 |      100 |       0 |   83.33 | 9                 
--------------|---------|----------|---------|---------|-------------------Test Suites: 1 passed, 1 total
+
+Test Suites: 1 passed, 1 total
 Tests:       10 passed, 10 total
 Snapshots:   0 total
 Time:        4.257 s
@@ -661,7 +692,7 @@ Tout les tests ont été exécuté sans probleme particulier
  PASS  tests/order.test.js
   Order Endpoints
     POST /api/orders
-      √ should create a new order (146 ms)
+      √ Devrait crée une nouvelle commande (146 ms) 
       √ Ne devrait pas créer de commande sans produits (22 ms)
       √ Ne devrait pas créer de commande avec un produit inexistant (19 ms)
     GET /api/orders/:id
@@ -674,7 +705,7 @@ Tout les tests ont été exécuté sans probleme particulier
       √ Devrait annuler une commande (37 ms)
       √ Ne devrait pas annuler une commande déjà livrée (36 ms)
 
--------------|---------|----------|---------|---------|-------------------
+
 File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
 -------------|---------|----------|---------|---------|-------------------
 All files    |   71.18 |    62.74 |      60 |   71.18 |                   
@@ -690,7 +721,7 @@ All files    |   71.18 |    62.74 |      60 |   71.18 |
   order.js   |     100 |      100 |     100 |     100 |                   
  src/routes  |     100 |      100 |     100 |     100 |                   
   ...utes.js |     100 |      100 |     100 |     100 |                   
--------------|---------|----------|---------|---------|-------------------
+
 Test Suites: 1 passed, 1 total
 Tests:       9 passed, 9 total
 Snapshots:   0 total
@@ -708,8 +739,7 @@ Tout les tests ont été exécuté sans probleme particulier
       √ devrait retourner tous les produits (50 ms)                       
     GET /api/products/:id                                                 
       √ devrait retourner un produit par id (42 ms)                       
-                                                                          
--------------|---------|----------|---------|---------|-------------------
+
 File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
 -------------|---------|----------|---------|---------|-------------------
 All files    |   39.21 |    20.83 |   23.07 |   39.21 |                   
@@ -725,7 +755,8 @@ All files    |   39.21 |    20.83 |   23.07 |   39.21 |
  src/routes  |   22.72 |        0 |       0 |   22.72 |                   
   ...utes.js |   10.52 |        0 |       0 |   10.52 | 9-20,26-49,55-73  
   ...utes.js |     100 |      100 |     100 |     100 |                   
--------------|---------|----------|---------|---------|-------------------Test Suites: 1 passed, 1 total
+
+Test Suites: 1 passed, 1 total
 Tests:       3 passed, 3 total
 Snapshots:   0 total
 Time:        3.066 s, estimated 27 s
