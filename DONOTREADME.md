@@ -761,4 +761,233 @@ Tests:       3 passed, 3 total
 Snapshots:   0 total
 Time:        3.066 s, estimated 27 s
 
-Tout les tests ont été exécuté sans probleme particulier
+Tout les tests ont été exécuté sans probleme particulier.
+
+## Application des bonnes pratiques
+
+### Optimisation des images docker
+La réduction des images docker s'est faite avec l'utilisation du multi staging. L'idée principale est de séparer les étapes de build et de serving pour ne conserver que les fichiers finaux nécessaires, réduisant ainsi la taille de l'image.
+
+
+``
+npm cache clean --force
+``
+
+ L'utilisation de cette commande qui réduit la taille de l'image Docker en supprimant les fichiers temporaires inutiles après l’installation des dépendances.
+
+### Séparation des fichiers copiés dans la phase finale:
+
+En copiant séparément package.json et package-lock.json, Docker réutilise plus efficacement les couches (layers), ce qui accélère les builds suivants.
+Si seul le code change (pas package.json), les dépendances ne sont pas réinstallées inutilement.
+
+Avant :
+dockerfile
+```
+COPY --from=build /app /app
+```
+
+Après :
+dockerfile
+```
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/package-lock.json /app/package-lock.json
+COPY --from=build /app/node_modules /app/node_modules
+```
+
+
+### Ajout de la politique restart: unless stopped
+Assure que les services redémarrent automatiquement en cas d’échec ou de redémarrage du serveur.
+
+
+```
+ product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: ../../Dockerfile.common
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/product-service:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+    entrypoint: /bin/sh -c "sh /app/scripts/init-products.sh && npm run dev"
+    restart: unless-stopped
+
+```
+
+
+### Logs et monitoring
+Limite la taille des logs (10MB par fichier, maximum 3 fichiers), pour éviter que les logs ne remplissent le disque.
+
+```
+ logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+```
+
+
+### Monitoring avancé avec Prometheus et Grafana
+Objectif : Mettre en place un monitoring complet pour les trois microservices en nodeJS et la base de données MongoDB, avec Prometheus pour la collecte des métriques et Grafana pour la visualisation.
+
+1. Ajouter les services Protheus et Grafana dans le fichier docker-compose.yml
+
+   
+``` 
+  services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+```
+
+Prometheus est désormais accessible sur : http://localhost:9090
+
+Grafana est désormais accesible sur : http://localhost:3000
+
+2. Configuration de prometheus pour récupérer les métriques dans le fichier prometheus.yaml
+
+``` 
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  - job_name: "auth-service"
+    static_configs:
+      - targets: ["host.docker.internal:3001"]
+
+  - job_name: "product-service"
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+
+  - job_name: "order-service"
+    static_configs:
+      - targets: ["host.docker.internal:3002"]
+
+  - job_name: "mongodb"
+    static_configs:
+      - targets: ["mongodb-exporter:9216"]
+```
+
+
+Prometheus récupère désormais les métriques des microservice via : /metrics.
+
+MongoDB est monitoré depuis mongodb-exporter
+ 
+3. Ajout de l'exportation des métriques dans chaque microservice
+  
+   a. Installation de prom-client et express-prom-bundle pour chaque micro service/
+  
+   b. Ajout de la middleware de monitoring dans app.js
+
+   
+```
+                const metricsMiddleware = promBundle({ includeMethod: true });
+               app.use(metricsMiddleware);
+               
+               const httpRequestCounter = new client.Counter({
+                 name: "http_requests_total",
+                 help: "Total HTTP requests received",
+               });
+               
+               const responseTimeHistogram = new client.Histogram({
+                 name: "http_response_time_seconds",
+                 help: "Response time in seconds",
+                 buckets: [0.1, 0.5, 1, 2, 5, 10],
+               });
+               
+               app.use((req, res, next) => {
+                 httpRequestCounter.inc();
+                 const start = Date.now();
+                 res.on("finish", () => {
+                   const duration = (Date.now() - start) / 1000;
+                   responseTimeHistogram.observe(duration);
+                 });
+                 next();
+               });
+               
+               app.get("/metrics", async (req, res) => {
+                 res.set("Content-Type", client.register.contentType);
+                 res.end(await client.register.metrics());
+               });
+
+```
+
+Chaque service expose désormais /metrics pour Prometheus.
+
+On surveille les requêtes HTTP et les temps de réponse.
+
+4. Vérification des métriques dans Prometheus
+  
+   a. Vérifier que tous les services ont un statut UP
+     ![image](https://github.com/user-attachments/assets/5789cb5d-159e-47b8-a9eb-84f220575687)
+  
+   b. Tester une requete promQL ( si 1 => le service est bien surveillé et si 0 => le service n'est pas surveillé )
+      ![image](https://github.com/user-attachments/assets/e5f9cddb-edcd-40d9-8f9d-ddf043d80203)
+
+5. Configurer Grafana pour afficher les métriques
+
+     a. Ajout de Prometheus comme source de données:
+      
+        1. Aller dans Configuration > Data Sources.
+
+         2. Cliquer sur Add Data Source.
+
+
+         3. Choisir Prometheus.
+
+   
+         4. Entrer l'URL : http://prometheus:9090.
+
+   
+         5. Cliquer sur Save & Test.***
+
+   
+     b. Importer les dashboards pour visualiser les métriques
+  
+          Dans Grafana > Dashboards > Import
+   nous avons ajouté :
+           API Node.js → ID 11074.
+           MongoDB → ID 2583.
+
+
+
+     c. Analyser les métriques dans Grafana
+     
+
+---
+
+
+
+
+
+
+
