@@ -1,0 +1,25 @@
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+COPY package.json ./
+COPY src/ ./src/
+
+RUN npm install
+
+RUN if npm run | grep -q "^  build$"; then \
+        npm run build; \
+    else \
+        echo "Build not necessary or development mode"; \
+    fi
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/dist /app/dist
+
+ARG PORT=3001
+EXPOSE $PORT
+
+CMD ["sh", "-c", "npm run start"]

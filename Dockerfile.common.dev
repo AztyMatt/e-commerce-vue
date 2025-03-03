@@ -1,0 +1,25 @@
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+COPY package.json ./
+
+RUN npm install
+
+COPY . .
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/package-lock.json /app/package-lock.json
+COPY --from=build /app/node_modules /app/node_modules
+
+# Add this line to create dev.txt
+RUN echo "Development Environment" > /app/dev.txt
+
+ARG PORT=3001
+EXPOSE $PORT
+
+CMD ["sh", "-c", "npm run dev"]
