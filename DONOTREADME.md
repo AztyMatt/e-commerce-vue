@@ -763,6 +763,8 @@ Time:        3.066 s, estimated 27 s
 
 Tout les tests ont été exécuté sans probleme particulier.
 
+---
+
 ## Application des bonnes pratiques
 
 ### Optimisation des images docker
@@ -982,8 +984,6 @@ On surveille les requêtes HTTP et les temps de réponse.
 
      c. Analyser les métriques dans Grafana
      
-
----
 
 
 
